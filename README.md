@@ -410,3 +410,24 @@ a8b8e00b5345b4b1e2d2ebd4c973724a9f3122c57b41c8279b19383b6871298d
     ```
    
 ---
+### Exercício 5: Contêiner Alpine com Variável de Ambiente
+
+**Objetivo:** Criar um contêiner com a imagem `alpine`, passar uma variável de ambiente chamada `MEU_NOME` com seu nome, e imprimir o valor da variável com o comando `echo`.
+
+**Comandos Executados:**
+
+1.  **Iniciar o contêiner Alpine com variável de ambiente e imprimir o nome:**
+    ```bash
+    docker run --rm -it -e MEU_NOME="Fabiola Sakae" alpine:latest sh -c 'echo "Olá, $MEU_NOME!"'
+    ```
+    
+    **Saída do Comando:**
+    ```
+    Unable to find image 'alpine:latest' locally
+    latest: Pulling from library/alpine
+    f18232174bc9: Already exists 
+    Digest: sha256:a8560b36e8b8210634f77d9f7f9efd7ffa463e380b75e2e74aff4511df3ef88c
+    Status: Downloaded newer image for alpine:latest
+    Olá, Fabiola Sakae!
+    ```
+---
