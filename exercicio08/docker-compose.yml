@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: mydatabase
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Mapeia a porta do PostgreSQL para o host
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_interface
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80" # Mapeia a porta do pgAdmin para o host
+    depends_on:
+      - db # Garante que o 'db' inicie antes do 'pgadmin'
+
+volumes:
+  postgres_data:
