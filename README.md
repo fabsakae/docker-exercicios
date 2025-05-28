@@ -551,3 +551,99 @@ a8b8e00b5345b4b1e2d2ebd4c973724a9f3122c57b41c8279b19383b6871298d
     * URL: `http://localhost:8080`
     
 ---
+# Exercício 7: Comunicação entre MongoDB e Mongo Express com Rede Docker Personalizada
+
+## Objetivo
+
+O objetivo deste exercício era criar uma rede Docker personalizada para permitir a comunicação entre dois contêineres: um servidor MongoDB e uma interface de gerenciamento MongoDB Express. O desafio incluía garantir que a comunicação funcionasse corretamente e que os serviços pudessem ser acessados via navegador.
+
+## Desafios Enfrentados e Soluções
+
+### 1. Erro "Exited (132)" no MongoDB
+
+Inicialmente, ao tentar rodar o contêiner do MongoDB com a imagem `mongo:latest` (ou versões mais recentes como `mongo:5.0+`), o contêiner saía imediatamente com o status `Exited (132)`.
+
+* **Diagnóstico:** Ao verificar os logs do contêiner (`docker logs mongodb`), a mensagem de erro revelou que versões do MongoDB 5.0+ exigem suporte a instruções AVX (Advanced Vector Extensions) na CPU, e o ambiente (neste caso, o WSL2 em uma máquina que não expõe AVX ou com uma CPU mais antiga) não fornecia esse suporte.
+
+* **Solução:** A solução foi utilizar uma versão mais antiga do MongoDB, que não tem essa exigência de AVX. A imagem `mongo:4.4` foi escolhida e funcionou perfeitamente.
+
+### 2. Conexão Recusada ao Acessar o Mongo Express
+
+Após a correção do problema do MongoDB, em algumas tentativas iniciais o Mongo Express ainda poderia não carregar ou apresentar erro de conexão.
+
+* **Diagnóstico:** Este problema geralmente ocorria se o contêiner do MongoDB não estivesse completamente "Up" (rodando) antes que o Mongo Express tentasse se conectar, ou se houvesse contêineres ou redes antigas em conflito.
+
+* **Solução:** Foi crucial garantir que todos os contêineres anteriores fossem removidos (`docker rm -f $(docker ps -aq)`) e a rede personalizada fosse recriada antes de iniciar os serviços na sequência correta (MongoDB primeiro, depois Mongo Express).
+
+## Passos para Reproduzir
+
+1.  **Limpeza do Ambiente (Opcional, mas recomendado para garantir um começo limpo):**
+    ```bash
+    docker rm -f $(docker ps -aq)
+    docker network rm app-mongo-net
+    ```
+
+2.  **Criação da Rede Docker Personalizada:**
+    Crie uma rede Docker personalizada chamada `app-mongo-net` para que os contêineres possam se comunicar usando seus nomes de serviço.
+    ```bash
+    docker network create app-mongo-net
+    ```
+    Saída esperada:
+    ```
+    fec66a9c7e96b48012b1b077a546334eead9a60cb08ff55875febe8a93c099fe
+    ```
+
+3.  **Iniciando o Contêiner do MongoDB (versão 4.4):**
+    Inicie o contêiner do MongoDB na rede `app-mongo-net` usando a imagem `mongo:4.4` (devido à exigência de AVX em versões mais recentes). Mapeamos a porta 27017 para acesso externo, embora a comunicação interna seja via rede Docker.
+    ```bash
+    docker run --name mongodb -p 27017:27017 --network app-mongo-net -d mongo:4.4
+    ```
+    Saída esperada :
+    ```
+    Unable to find image 'mongo:4.4' locally
+    4.4: Pulling from library/mongo
+    d4c3c94e5e10: Pull complete 
+    bca5893fe8bd: Pull complete 
+    35ec036951f8: Pull complete 
+    ddb77a597b02: Pull complete 
+    7ab9eb5a4d9d: Pull complete 
+    a6c1ba219414: Pull complete 
+    83b651df5384: Pull complete 
+    e233f2d1b360: Pull complete 
+    Digest: sha256:52c42cbab240b3c5b1748582cc13ef46d521ddacae002bbbda645cebed270ec0
+    Status: Downloaded newer image for mongo:4.4
+    ab7b6d34d28cbf30275da4679fc7371d7bb6f0ee4029c84c9e564090443a6825
+    ```
+    Verifique se o MongoDB está rodando:
+    ```bash
+    docker ps
+    ```
+    Saída esperada:
+    ```
+    ab7b6d34d28c   mongo:4.4   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds   0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp   mongodb
+    ```
+    4.  **Iniciando o Contêiner do Mongo Express:**
+    Inicie o contêiner do Mongo Express na mesma rede, configurando-o para se conectar ao `mongodb` usando o nome do contêiner como host.
+    ```bash
+    docker run --name mongo-express -p 8081:8081 --network app-mongo-net \
+      -e ME_CONFIG_MONGODB_SERVER=mongodb -e ME_CONFIG_MONGODB_PORT=27017 -d mongo-express
+    ```
+    Saída esperada (exemplo):
+    ```
+    56c771279bc912bb83a9330d6606802acd35c1faa4eb5bc370fe6c99b7436cee
+    ```
+    Verifique se ambos os contêineres estão rodando:
+    ```bash
+    docker ps
+    ```
+    Saída esperada:
+    ```
+    CONTAINER ID        IMAGE           COMMAND                  CREATED             STATUS          PORTS                                              NAMES
+    56c771279bc9        mongo-express   "/sbin/tini -- /dock…"   X seconds ago       Up X seconds    0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp        mongo-express
+    ab7b6d34d28c        mongo:4.4       "docker-entrypoint.s…"   X minutes ago       Up X minutes    0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp    mongodb
+    ```
+
+5.  **Acessando a Interface do Mongo Express:**
+    Abra seu navegador e acesse `http://localhost:8081`.
+    ---
+    
