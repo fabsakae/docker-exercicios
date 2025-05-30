@@ -1,0 +1,42 @@
+# Usamos uma imagem slim como base de build e de execução, pois ela já é menor.
+FROM python:3.9-slim-buster as builder
+
+# Definir o diretório de trabalho dentro do contêiner
+WORKDIR /app
+
+# Copiar apenas o arquivo de dependências primeiro para aproveitar o cache do Docker
+# Se requirements.txt não mudar, esta camada e as seguintes (instalação) serão cacheadas.
+COPY requirements.txt .
+
+# Instalar as dependências
+# --no-cache-dir: não guarda os pacotes no cache do pip, economizando espaço.
+# --upgrade pip: garante que o pip está atualizado para instalar.
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# --- Estágio Final (runtime) ---
+# Usamos a mesma imagem slim, mas agora só copiamos o que é necessário do estágio anterior.
+FROM python:3.9-slim-buster
+
+# Criar um usuário não-root para executar a aplicação
+# -M: não criar o diretório home
+# -s /bin/false: não atribuir um shell de login
+# appuser: nome do usuário
+RUN adduser --system --group appuser
+
+# Definir o diretório de trabalho
+WORKDIR /app
+
+# Copiar os arquivos da aplicação e as dependências instaladas do estágio 'builder'
+# Isso garante que apenas o que é essencial para a execução vá para a imagem final.
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY app.py .
+
+# Definir o usuário para executar a aplicação
+USER appuser
+
+# Expor a porta que a aplicação Flask usa
+EXPOSE 5000
+
+# Comando para iniciar a aplicação
+CMD ["python", "app.py"]
