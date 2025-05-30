@@ -1,21 +1,3 @@
-# Exercícios Docker - Fabíola Sakae
-
-Este repositório contém a resolução dos exercícios propostos na disciplina de Docker, desenvolvidos por Fabíola Sakae.
-
-## Índice dos Exercícios
-
----
-
----
-  
-
----
-
-   
----
-
-    
----
 # Exercício 7: Comunicação entre MongoDB e Mongo Express com Rede Docker Personalizada
 
 ## Objetivo
@@ -86,5 +68,3 @@ O objetivo deste exercício é criar uma rede Docker personalizada para permitir
 5.  **Acessando a Interface do Mongo Express:**
     No navegador, acesse `http://localhost:8081`.
     ---
-
-
